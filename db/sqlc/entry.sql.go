@@ -49,3 +49,45 @@ func (q *Queries) GetEntry(ctx context.Context, id int64) (Entry, error) {
 	)
 	return i, err
 }
+
+const listEntry = `-- name: ListEntry :many
+SELECT id, accoubt_id, amount, created_at FROM entries
+WHERE accoubt_id = $1
+ORDER BY id
+LIMIT $2
+OFFSET $3
+`
+
+type ListEntryParams struct {
+	AccoubtID int64 `json:"accoubt_id"`
+	Limit     int32 `json:"limit"`
+	Offset    int32 `json:"offset"`
+}
+
+func (q *Queries) ListEntry(ctx context.Context, arg ListEntryParams) ([]Entry, error) {
+	rows, err := q.db.QueryContext(ctx, listEntry, arg.AccoubtID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Entry
+	for rows.Next() {
+		var i Entry
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccoubtID,
+			&i.Amount,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
