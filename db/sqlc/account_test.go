@@ -4,14 +4,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/JMustang/E_Bank/util"
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateAccount(t *testing.T) {
+func createRandomAccount(t *testing.T) Account {
 	arg := CreateAccountParams{
-		Owner:    "John Doe",
-		Balance:  1000,
-		Currency: "USD",
+		Owner:    util.RandomOwner(),
+		Balance:  util.RandomMoney(),
+		Currency: util.RandomCurrency(),
 	}
 	account, err := testQueries.CreateAccount(context.Background(), arg)
 	require.NoError(t, err)
@@ -23,4 +24,10 @@ func TestCreateAccount(t *testing.T) {
 
 	require.NotZero(t, account.ID)
 	require.NotZero(t, account.CreatedAt)
+
+	return account
+}
+
+func TestCreateAccount(t *testing.T) {
+	createRandomAccount(t)
 }
