@@ -58,13 +58,13 @@ LIMIT $2
 OFFSET $3
 `
 
-type ListEntryParams struct {
+type ListEntriesParams struct {
 	AccoubtID int64 `json:"accoubt_id"`
 	Limit     int32 `json:"limit"`
 	Offset    int32 `json:"offset"`
 }
 
-func (q *Queries) ListEntry(ctx context.Context, arg ListEntryParams) ([]Entry, error) {
+func (q *Queries) ListEntries(ctx context.Context, arg ListEntriesParams) ([]Entry, error) {
 	rows, err := q.db.QueryContext(ctx, listEntry, arg.AccoubtID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
