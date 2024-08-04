@@ -57,7 +57,7 @@ func (q *Queries) GetTransfer(ctx context.Context, id int64) (Transfer, error) {
 const listTransfers = `-- name: ListTransfers :many
 SELECT id, from_accoubt_id, to_accoubt_id, amount, created_at FROM transfers
 WHERE
-    from_accoubt_id $1 OR
+    from_accoubt_id = $1 OR
     to_accoubt_id = $2
 ORDER BY id
 LIMIT $3
@@ -65,15 +65,15 @@ OFFSET $4
 `
 
 type ListTransfersParams struct {
-	Column1     interface{} `json:"column_1"`
-	ToAccoubtID int64       `json:"to_accoubt_id"`
-	Limit       int32       `json:"limit"`
-	Offset      int32       `json:"offset"`
+	FromAccoubtID int64 `json:"from_accoubt_id"`
+	ToAccoubtID   int64 `json:"to_accoubt_id"`
+	Limit         int32 `json:"limit"`
+	Offset        int32 `json:"offset"`
 }
 
 func (q *Queries) ListTransfers(ctx context.Context, arg ListTransfersParams) ([]Transfer, error) {
 	rows, err := q.db.QueryContext(ctx, listTransfers,
-		arg.Column1,
+		arg.FromAccoubtID,
 		arg.ToAccoubtID,
 		arg.Limit,
 		arg.Offset,
