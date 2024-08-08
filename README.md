@@ -3,8 +3,6 @@
 Database diagram
 ![db diagram](Simple_Bank.png)
 
-Aqui está um exemplo de README para a aplicação backend "E_Bank" utilizando Golang, PostgreSQL, SQLC, Testify, Migrate, Docker e Dotenv:
-
 ---
 
 Este é o backend para o E_Bank, uma aplicação bancária que permite a gestão de contas, transferências e consultas de saldo. O backend é desenvolvido em Go e utiliza PostgreSQL como banco de dados relacional. O projeto foi configurado para ser facilmente desenvolvido e testado em diferentes ambientes, com o uso de Docker, Migrate para migrações de banco de dados, SQLC para geração de queries, Testify para testes e Dotenv para o gerenciamento de variáveis de ambiente.
@@ -121,5 +119,3 @@ go test -v ./...
 Se desejar contribuir com o projeto, faça um fork do repositório, crie um branch com suas alterações, e depois envie um pull request.
 
 ---
-
-Este README oferece uma visão geral do E_Bank, incluindo as tecnologias utilizadas e os passos para configurar o ambiente de desenvolvimento.
