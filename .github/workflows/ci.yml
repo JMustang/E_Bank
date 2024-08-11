@@ -46,7 +46,7 @@ jobs:
           which migrate
 
       - name: Run migrations
-        run: migrate -path db/migration -database "postgresql://docker:docker@localhost:5433/Simple_Bank?sslmode=disable" -verbose up
+        run: make migrateup
 
       - name: Build
         run: go build -v ./...
