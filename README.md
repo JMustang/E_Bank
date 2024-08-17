@@ -213,3 +213,146 @@ Neste exemplo:
 Se precisar adicionar ou modificar consultas SQL, basta editar os arquivos no diretório `db/query/` e executar novamente o comando `sqlc generate` para regenerar o código Go atualizado.
 
 ---
+
+### Configuração e Utilização do PostgreSQL
+
+O PostgreSQL é um banco de dados relacional poderoso e flexível, utilizado como o sistema de gerenciamento de banco de dados (DBMS) para o backend do E_Bank. Abaixo, você encontrará instruções sobre como configurar e utilizar o PostgreSQL com a sua aplicação.
+
+#### 1. Instalando o PostgreSQL
+
+Se você ainda não tem o PostgreSQL instalado, siga as instruções abaixo para instalar:
+
+**No Ubuntu/Debian:**
+
+```bash
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+```
+
+**No macOS (usando Homebrew):**
+
+```bash
+brew update
+brew install postgresql
+brew services start postgresql
+```
+
+**No Windows:**
+
+Baixe e instale a partir do [site oficial do PostgreSQL](https://www.postgresql.org/download/windows/).
+
+#### 2. Configurando o Banco de Dados
+
+Após a instalação, siga os passos abaixo para configurar o banco de dados:
+
+1. **Inicie o serviço PostgreSQL** (se ainda não estiver em execução):
+
+   - No Linux: `sudo service postgresql start`
+   - No macOS: `brew services start postgresql`
+   - No Windows: O serviço deve iniciar automaticamente após a instalação.
+
+2. **Acesse o prompt de comando do PostgreSQL:**
+
+```bash
+sudo -u postgres psql
+```
+
+3. **Crie um novo banco de dados para o E_Bank:**
+
+```sql
+CREATE DATABASE e_bank_db;
+```
+
+4. **Crie um usuário para o banco de dados:**
+
+```sql
+CREATE USER usuario_e_bank WITH ENCRYPTED PASSWORD 'senha_segura';
+```
+
+5. **Conceda privilégios ao usuário criado:**
+
+```sql
+GRANT ALL PRIVILEGES ON DATABASE e_bank_db TO usuario_e_bank;
+```
+
+6. **Saia do prompt de comando do PostgreSQL:**
+
+```sql
+\q
+```
+
+#### 3. Configurando a Conexão com o Banco de Dados no Projeto
+
+Você precisará configurar a string de conexão ao banco de dados no seu arquivo `.env`. O conteúdo deve ser algo como:
+
+```env
+DB_SOURCE=postgresql://usuario_e_bank:senha_segura@localhost:5432/e_bank_db?sslmode=disable
+DB_DRIVER=postgres
+```
+
+#### 4. Usando PostgreSQL com Go
+
+No seu código Go, você pode utilizar o banco de dados configurado da seguinte forma:
+
+1. **Instale o driver PostgreSQL para Go (`pq`):**
+
+```bash
+go get github.com/lib/pq
+```
+
+2. **Exemplo de Conexão e Consulta no Banco de Dados:**
+
+```go
+package main
+
+import (
+    "database/sql"
+    "fmt"
+    "log"
+
+    _ "github.com/lib/pq"
+)
+
+const (
+    dbSource = "postgresql://usuario_e_bank:senha_segura@localhost:5432/e_bank_db?sslmode=disable"
+)
+
+func main() {
+    db, err := sql.Open("postgres", dbSource)
+    if err != nil {
+        log.Fatal("cannot connect to db:", err)
+    }
+    defer db.Close()
+
+    var id int
+    var owner string
+    var balance float64
+    var currency string
+
+    err = db.QueryRow("SELECT id, owner, balance, currency FROM accounts WHERE id = $1", 1).Scan(&id, &owner, &balance, &currency)
+    if err != nil {
+        log.Fatal("query error:", err)
+    }
+
+    fmt.Printf("ID: %d, Owner: %s, Balance: %.2f, Currency: %s\n", id, owner, balance, currency)
+}
+```
+
+Nesse exemplo:
+
+- **`sql.Open`**: Abre a conexão com o banco de dados usando a string de conexão especificada.
+- **`db.QueryRow`**: Executa uma consulta SQL e mapeia o resultado para as variáveis correspondentes.
+
+#### 5. Migrações de Banco de Dados
+
+Para aplicar as migrações do banco de dados com Migrate, você pode usar o seguinte comando:
+
+```bash
+migrate -path db/migration -database "$DB_SOURCE" -verbose up
+```
+
+Este comando aplicará todas as migrações pendentes no seu banco de dados PostgreSQL.
+
+---
+
+Este exemplo fornece uma configuração completa para o PostgreSQL no contexto do seu projeto Go, incluindo a instalação, configuração, e exemplos de uso no código.
