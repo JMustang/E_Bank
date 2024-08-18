@@ -89,3 +89,29 @@ type updateAccountRequest struct {
 	ID      int64 `uri:"id" binding:"required,min=1"`
 	Balance int64 `json:"balance" binding:"required,min=0"`
 }
+
+func (server *Server) updateAccount(ctx *gin.Context) {
+	var req updateAccountRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// Atualizando a conta com o novo saldo
+	arg := db.UpdateAccountParams{
+		ID:      req.ID,
+		Balance: req.Balance,
+	}
+
+	updatedAccount, err := server.store.UpdateAccount(ctx, arg)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, updatedAccount)
+}
