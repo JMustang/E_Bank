@@ -15,7 +15,7 @@ Este é o backend para o E_Bank, uma aplicação bancária que permite a gestão
 - **Testify**: Framework para testes em Go.
 - **Migrate**: Ferramenta para gerenciamento e migração de esquemas de banco de dados.
 - **Docker**: Usado para containerizar a aplicação e facilitar o ambiente de desenvolvimento e produção.
-- **Dotenv**: Para gerenciar variáveis de ambiente.
+- **Viper**: Para gerenciar variáveis de ambiente.
 
 ## Requisitos
 
@@ -356,3 +356,161 @@ Este comando aplicará todas as migrações pendentes no seu banco de dados Post
 ---
 
 Este exemplo fornece uma configuração completa para o PostgreSQL no contexto do seu projeto Go, incluindo a instalação, configuração, e exemplos de uso no código.
+
+---
+
+### Usando Viper para Gerenciamento de Configurações
+
+[Viper](https://github.com/spf13/viper) é uma biblioteca poderosa para gerenciamento de configurações em Go. Ele suporta a leitura de variáveis de ambiente, arquivos de configuração em vários formatos (JSON, TOML, YAML, HCL, INI), e muito mais. Neste tutorial, você aprenderá como integrar o Viper ao seu projeto E_Bank para gerenciar as configurações da aplicação.
+
+#### 1. Instalando o Viper
+
+Primeiro, adicione o Viper ao seu projeto Go:
+
+```bash
+go get github.com/spf13/viper
+```
+
+#### 2. Configurando o Viper
+
+No seu projeto, você pode usar o Viper para carregar variáveis de ambiente e arquivos de configuração. Abaixo está um exemplo básico de como configurar o Viper para carregar variáveis de ambiente e um arquivo `.env`:
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "github.com/spf13/viper"
+)
+
+func initConfig() {
+    // Configurando o Viper para ler o arquivo .env
+    viper.SetConfigFile(".env")
+
+    // Tentando ler o arquivo de configuração
+    if err := viper.ReadInConfig(); err != nil {
+        log.Printf("Error reading config file, %s", err)
+    }
+
+    // Configurando o Viper para ler variáveis de ambiente
+    viper.AutomaticEnv()
+
+    // Definindo valores padrão
+    viper.SetDefault("DB_DRIVER", "postgres")
+}
+
+func main() {
+    initConfig()
+
+    // Acessando as configurações
+    dbDriver := viper.GetString("DB_DRIVER")
+    dbSource := viper.GetString("DB_SOURCE")
+
+    fmt.Printf("Database Driver: %s\n", dbDriver)
+    fmt.Printf("Database Source: %s\n", dbSource)
+}
+```
+
+#### 3. Estrutura do Arquivo `.env`
+
+Aqui está um exemplo de como o arquivo `.env` pode ser estruturado:
+
+```env
+DB_DRIVER=postgres
+DB_SOURCE=postgresql://usuario_e_bank:senha_segura@localhost:5432/e_bank_db?sslmode=disable
+PORT=8080
+```
+
+No código acima:
+
+- **`viper.SetConfigFile(".env")`**: Especifica o arquivo `.env` como a fonte de configuração.
+- **`viper.ReadInConfig()`**: Lê o arquivo de configuração.
+- **`viper.AutomaticEnv()`**: Permite que o Viper leia variáveis de ambiente diretamente.
+- **`viper.SetDefault()`**: Define um valor padrão para uma configuração caso ela não seja encontrada.
+
+#### 4. Acessando Configurações
+
+Depois de configurar o Viper, você pode acessar as configurações em qualquer parte do seu código usando `viper.Get<Type>("key")`, onde `<Type>` é o tipo da configuração (`String`, `Int`, `Bool`, etc.) e `"key"` é o nome da chave de configuração.
+
+Exemplo:
+
+```go
+port := viper.GetInt("PORT")
+fmt.Printf("Server running on port %d\n", port)
+```
+
+#### 5. Uso Avançado do Viper
+
+Você pode usar o Viper para carregar configurações de múltiplos arquivos, hierarquia de configurações, e mais. Abaixo está um exemplo de como carregar um arquivo YAML:
+
+**Arquivo de Configuração YAML (`config.yaml`):**
+
+```yaml
+server:
+  port: 8080
+database:
+  driver: postgres
+  source: postgresql://usuario_e_bank:senha_segura@localhost:5432/e_bank_db?sslmode=disable
+```
+
+**Código para Carregar o YAML:**
+
+```go
+viper.SetConfigName("config")
+viper.SetConfigType("yaml")
+viper.AddConfigPath(".") // Diretório atual
+
+if err := viper.ReadInConfig(); err != nil {
+    log.Fatalf("Error reading config file, %s", err)
+}
+
+port := viper.GetInt("server.port")
+dbDriver := viper.GetString("database.driver")
+
+fmt.Printf("Server running on port %d\n", port)
+fmt.Printf("Database Driver: %s\n", dbDriver)
+```
+
+#### 6. Exemplo Completo
+
+Aqui está um exemplo completo que combina leitura de arquivos `.env` e suporte a variáveis de ambiente:
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "github.com/spf13/viper"
+)
+
+func initConfig() {
+    viper.SetConfigFile(".env")
+    viper.SetConfigType("env")
+    viper.AutomaticEnv()
+
+    if err := viper.ReadInConfig(); err != nil {
+        log.Printf("Error reading config file, %s", err)
+    }
+
+    viper.SetDefault("PORT", 8080)
+    viper.SetDefault("DB_DRIVER", "postgres")
+}
+
+func main() {
+    initConfig()
+
+    port := viper.GetInt("PORT")
+    dbDriver := viper.GetString("DB_DRIVER")
+    dbSource := viper.GetString("DB_SOURCE")
+
+    fmt.Printf("Server running on port %d\n", port)
+    fmt.Printf("Database Driver: %s\n", dbDriver)
+    fmt.Printf("Database Source: %s\n", dbSource)
+}
+```
+
+Este tutorial mostra como usar o Viper para gerenciar configurações de maneira eficiente no seu projeto E_Bank. Com ele, você pode facilmente ajustar configurações sem alterar o código, tornando sua aplicação mais flexível e fácil de manter.
