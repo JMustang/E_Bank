@@ -514,3 +514,132 @@ func main() {
 ```
 
 Este tutorial mostra como usar o Viper para gerenciar configurações de maneira eficiente no seu projeto E_Bank. Com ele, você pode facilmente ajustar configurações sem alterar o código, tornando sua aplicação mais flexível e fácil de manter.
+
+---
+
+<!-- ~/. -->
+
+## Go Mock
+
+### Usando GoMock para Mockar Dependências nos Testes
+
+[GoMock](https://github.com/golang/mock) é uma biblioteca popular para criar mocks em testes de unidades no Go. Ela permite simular o comportamento de interfaces, ajudando a testar o código de maneira isolada e eficiente. Neste tutorial, você aprenderá como integrar e utilizar o GoMock no seu projeto E_Bank.
+
+#### 1. Instalando GoMock e Mockgen
+
+Primeiro, adicione o GoMock e a ferramenta `mockgen` ao seu projeto:
+
+```bash
+go get github.com/golang/mock/gomock
+go install github.com/golang/mock/mockgen@latest
+```
+
+A ferramenta `mockgen` é usada para gerar código de mock a partir das interfaces do seu projeto.
+
+#### 2. Criando Mocks com GoMock
+
+Vamos supor que você tenha uma interface `Store` no seu projeto que precisa ser mockada para testes:
+
+**Interface Original (`store.go`):**
+
+```go
+package db
+
+import "context"
+
+type Store interface {
+    GetAccount(ctx context.Context, id int64) (Account, error)
+    DeleteAccount(ctx context.Context, id int64) error
+}
+```
+
+Para gerar um mock dessa interface, execute o seguinte comando no terminal:
+
+```bash
+mockgen -source=db/store.go -destination=db/mock/store_mock.go -package=mockdb
+```
+
+Neste comando:
+
+- **`-source=db/store.go`**: Caminho para o arquivo contendo a interface.
+- **`-destination=db/mock/store_mock.go`**: Caminho onde o código de mock gerado será salvo.
+- **`-package=mockdb`**: Nome do pacote onde o mock será gerado.
+
+#### 3. Escrevendo Testes com GoMock
+
+Depois de gerar o mock, você pode usá-lo em seus testes. Abaixo está um exemplo de como escrever um teste para a função que utiliza a interface `Store`:
+
+**Exemplo de Teste (`store_test.go`):**
+
+```go
+package db_test
+
+import (
+    "context"
+    "testing"
+
+    "github.com/golang/mock/gomock"
+    "github.com/stretchr/testify/require"
+    "github.com/usuario/e_bank/db/mock"
+    "github.com/usuario/e_bank/db"
+)
+
+func TestDeleteAccount(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    mockStore := mockdb.NewMockStore(ctrl)
+    ctx := context.Background()
+    accountID := int64(1)
+
+    mockStore.EXPECT().
+        DeleteAccount(ctx, accountID).
+        Return(nil).
+        Times(1)
+
+    err := mockStore.DeleteAccount(ctx, accountID)
+    require.NoError(t, err)
+}
+```
+
+Neste exemplo:
+
+- **`gomock.NewController(t)`**: Cria um novo controlador para gerenciar o ciclo de vida dos mocks.
+- **`mockdb.NewMockStore(ctrl)`**: Cria uma nova instância do mock da interface `Store`.
+- **`mockStore.EXPECT()`**: Define as expectativas para o mock, especificando que o método `DeleteAccount` deve ser chamado com os parâmetros fornecidos e deve retornar `nil`.
+- **`Times(1)`**: Especifica que o método deve ser chamado exatamente uma vez.
+- **`require.NoError(t, err)`**: Verifica se não houve erro ao chamar o método mockado.
+
+#### 4. Executando os Testes
+
+Após escrever os testes, você pode executá-los com o comando padrão do Go:
+
+```bash
+go test -v ./...
+```
+
+Isso executará todos os testes no seu projeto, incluindo aqueles que utilizam os mocks gerados pelo GoMock.
+
+#### 5. Uso Avançado do GoMock
+
+GoMock permite definir comportamentos complexos e encadeados, além de validações sobre os parâmetros passados para os métodos mockados. Aqui estão algumas funcionalidades adicionais:
+
+- **Qualquer valor (`gomock.Any()`)**: Usado para corresponder a qualquer valor passado como argumento.
+- **Sequências (`InOrder()`)**: Usado para garantir que as expectativas sejam satisfeitas em uma ordem específica.
+
+**Exemplo de Uso Avançado:**
+
+```go
+mockStore.EXPECT().
+    DeleteAccount(ctx, gomock.Any()).
+    Return(nil).
+    Times(1)
+```
+
+Este exemplo define que o método `DeleteAccount` deve ser chamado com qualquer valor de `id`.
+
+---
+
+Este tutorial fornece uma introdução ao uso do GoMock no seu projeto Go,
+mostrando como ele pode facilitar a criação de testes de unidade robustos e isolados.
+Com ele, você pode simular o comportamento de interfaces e verificar se o código funciona corretamente em diferentes cenários.
