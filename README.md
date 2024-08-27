@@ -1,7 +1,7 @@
 # E_Bank Backend
 
 Database diagram
-![db diagram](Simple_Bank.png)
+![db diagram](Simple_Bank2.png)
 
 ---
 
