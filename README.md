@@ -13,6 +13,7 @@ Este é o backend para o E_Bank, uma aplicação bancária que permite a gestão
 - **PostgreSQL**: Banco de dados relacional utilizado para armazenar informações.
 - **SQLC**: Ferramenta para gerar código Go a partir de consultas SQL.
 - **Testify**: Framework para testes em Go.
+- **Bcrypt**: Usando para fazer Hashing de Senhas.
 - **Migrate**: Ferramenta para gerenciamento e migração de esquemas de banco de dados.
 - **Docker**: Usado para containerizar a aplicação e facilitar o ambiente de desenvolvimento e produção.
 - **Viper**: Para gerenciar variáveis de ambiente.
@@ -643,3 +644,146 @@ Este exemplo define que o método `DeleteAccount` deve ser chamado com qualquer 
 Este tutorial fornece uma introdução ao uso do GoMock no seu projeto Go,
 mostrando como ele pode facilitar a criação de testes de unidade robustos e isolados.
 Com ele, você pode simular o comportamento de interfaces e verificar se o código funciona corretamente em diferentes cenários.
+
+---
+
+### Usando Bcrypt para Hashing de Senhas
+
+`bcrypt` é uma biblioteca popular para hashing de senhas,
+amplamente utilizada para garantir a segurança das credenciais dos usuários em aplicações web.
+Ele aplica um algoritmo de hashing que é lento por design,
+dificultando ataques de força bruta.
+Neste tutorial, você aprenderá como integrar e utilizar
+`bcrypt` no seu projeto E_Bank para proteger as senhas dos usuários.
+
+#### 1. Instalando a Biblioteca Bcrypt
+
+Para começar, você precisa instalar a biblioteca `bcrypt` no seu projeto Go:
+
+```bash
+go get golang.org/x/crypto/bcrypt
+```
+
+#### 2. Hashing de Senhas
+
+Para armazenar as senhas dos usuários de forma segura,
+você deve hashá-las antes de salvar no banco de dados.
+Abaixo está um exemplo de como criar um hash de uma senha usando `bcrypt`:
+
+```go
+package util
+
+import (
+    "golang.org/x/crypto/bcrypt"
+)
+
+// HashPassword recebe uma senha e retorna o hash bcrypt dessa senha.
+func HashPassword(password string) (string, error) {
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+    if err != nil {
+        return "", err
+    }
+    return string(hashedPassword), nil
+}
+```
+
+Neste exemplo:
+
+- **`bcrypt.GenerateFromPassword`**: Gera um hash bcrypt a partir de uma senha.
+  O segundo argumento (`bcrypt.DefaultCost`) define o custo de processamento do algoritmo,
+  determinando quão intensivo em termos de CPU será o processo de hashing.
+  O valor padrão (`bcrypt.DefaultCost`) é uma boa escolha para a maioria dos casos.
+
+#### 3. Verificando Senhas
+
+Quando um usuário tenta fazer login,
+você precisa comparar a senha fornecida com o hash armazenado no banco de dados.
+Abaixo está um exemplo de como realizar essa verificação:
+
+```go
+package util
+
+import (
+    "golang.org/x/crypto/bcrypt"
+)
+
+// CheckPassword compara uma senha com um hash bcrypt e retorna nil se coincidem.
+func CheckPassword(password, hashedPassword string) error {
+    return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+}
+```
+
+Neste exemplo:
+
+- **`bcrypt.CompareHashAndPassword`**: Compara o hash armazenado no banco de dados com a senha fornecida pelo usuário.
+- Se as senhas coincidem, retorna `nil`; caso contrário, retorna um erro.
+
+#### 4. Usando Bcrypt no Projeto
+
+Agora que você tem as funções para hash e verificação,
+pode usá-las em seu código de cadastro e autenticação de usuários.
+Veja como pode ser feito:
+
+**Exemplo de Cadastro de Usuário:**
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "github.com/usuario/e_bank/util"
+)
+
+func main() {
+    password := "senhaSegura123"
+
+    hashedPassword, err := util.HashPassword(password)
+    if err != nil {
+        log.Fatal("Erro ao criar hash da senha:", err)
+    }
+
+    fmt.Println("Senha Hasheada:", hashedPassword)
+}
+```
+
+**Exemplo de Verificação de Senha:**
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "github.com/usuario/e_bank/util"
+)
+
+func main() {
+    password := "senhaSegura123"
+    hashedPassword := "$2a$10$N9qo8uLOickgx2ZMRZo5e.SfIoB.z7x6WjVrqjRCJNNFPq5H7KJW6" // Exemplo de hash armazenado
+
+    err := util.CheckPassword(password, hashedPassword)
+    if err != nil {
+        log.Fatal("Senha incorreta")
+    }
+
+    fmt.Println("Senha correta")
+}
+```
+
+#### 5. Protegendo as Senhas com Bcrypt
+
+Ao usar `bcrypt`, as senhas dos seus usuários estarão muito mais seguras contra ataques de força bruta.
+No entanto, aqui estão algumas práticas recomendadas adicionais:
+
+- **Sempre hash as senhas antes de armazená-las**: Nunca armazene senhas em texto plano.
+- **Ajuste o custo conforme necessário**: O custo (`bcrypt.DefaultCost`) pode ser ajustado para aumentar a segurança,
+  mas tenha em mente que valores muito altos podem impactar a performance da aplicação.
+- **Verifique as senhas com segurança**: Sempre use `bcrypt.CompareHashAndPassword` para comparar senhas,
+  nunca compare hashes diretamente.
+
+---
+
+Este tutorial explica o que é o `bcrypt` e como você pode usá-lo no seu projeto para proteger as senhas dos usuários de forma eficaz e segura.
