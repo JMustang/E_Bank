@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"time"
 
 	db "github.com/JMustang/E_Bank/db/sqlc"
 	"github.com/JMustang/E_Bank/util"
@@ -12,9 +13,27 @@ import (
 // HANDLERS FOR ACCOUNTS
 type createUserRequest struct {
 	Username string `json:"username" binding:"required,alphanum"`
-	Password string `json:"password" binding:"required,currency,min=6"`
-	FullName string `json:"full_name" binding:"required,currency"`
-	Email    string `json:"email" binding:"required,currency,email"`
+	Password string `json:"password" binding:"required,min=6"`
+	FullName string `json:"full_name" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+}
+
+type userResponse struct {
+	Username          string    `json:"username"`
+	FullName          string    `json:"full_name"`
+	Email             string    `json:"email"`
+	PasswordChangedAt time.Time `json:"password_changed_at"`
+	CreatedAt         time.Time `json:"created_at"`
+}
+
+func newUserResponse(user db.User) userResponse {
+	return userResponse{
+		Username:          user.Username,
+		FullName:          user.FullName,
+		Email:             user.Email,
+		PasswordChangedAt: user.PasswordChangedAt,
+		CreatedAt:         user.CreatedAt,
+	}
 }
 
 func (server *Server) createUser(ctx *gin.Context) {
@@ -49,6 +68,8 @@ func (server *Server) createUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	ctx.JSON(http.StatusOK, user)
+
+	rsp := newUserResponse(user)
+	ctx.JSON(http.StatusOK, rsp)
 
 }
