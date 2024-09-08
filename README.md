@@ -17,6 +17,7 @@ Este é o backend para o E_Bank, uma aplicação bancária que permite a gestão
 - **Migrate**: Ferramenta para gerenciamento e migração de esquemas de banco de dados.
 - **Docker**: Usado para containerizar a aplicação e facilitar o ambiente de desenvolvimento e produção.
 - **Viper**: Para gerenciar variáveis de ambiente.
+- **PASETO**: Autenticação Baseada em Token (Alternativa ao JWT. Falam as más línguas que ~~melhor~~ mais simples. ).
 
 ## Requisitos
 
@@ -787,3 +788,191 @@ No entanto, aqui estão algumas práticas recomendadas adicionais:
 ---
 
 Este tutorial explica o que é o `bcrypt` e como você pode usá-lo no seu projeto para proteger as senhas dos usuários de forma eficaz e segura.
+
+---
+
+## Autenticação Baseada em Token com PASETO
+
+[PASETO (Platform-Agnostic Security Tokens)](https://paseto.io/) é uma alternativa mais segura e moderna ao JWT (JSON Web Tokens) para autenticação baseada em tokens. Ao contrário do JWT, que tem várias implementações inseguras, PASETO foi projetado para ser seguro por padrão, evitando potenciais vulnerabilidades conhecidas.
+
+Neste tutorial, vamos aprender o que é PASETO e como implementá-lo no projeto E_Bank para autenticação de usuários.
+
+**1. O que é PASETO?**
+PASETO é um formato de token assinado e/ou criptografado que, ao ser gerado, garante:
+
+- **Autenticidade:** O token não pode ser alterado sem ser detectado.
+- **Segurança:** PASETO previne vulnerabilidades como a confusão de algoritmos, que pode ocorrer com JWT.
+- **Simplicidade:** Comparado ao JWT, PASETO é mais simples de usar corretamente, reduzindo o risco de erros na implementação.
+  Existem dois tipos de PASETO:
+
+- V1 (Assinatura com RSA) e V2 (Assinatura com Ed25519 e criptografia com XChaCha20-Poly1305). Neste exemplo, usaremos a versão V2, que é recomendada para aplicações modernas.
+
+**2. Instalando a Biblioteca PASETO**
+Primeiro, instale a biblioteca Go para trabalhar com PASETO:
+
+```bash
+go get github.com/o1egl/paseto
+```
+
+**3. Implementando a Geração e Verificação de Tokens PASETO**
+Aqui estão os passos para implementar PASETO no projeto E_Bank:
+
+Passo 1: Criar uma chave secreta
+
+PASETO usa uma chave secreta para assinar os tokens. A chave secreta deve ter pelo menos 32 bytes de comprimento.
+
+```go
+package util
+
+import (
+    "time"
+    "github.com/o1egl/paseto"
+    "golang.org/x/crypto/chacha20poly1305"
+    "fmt"
+)
+
+type PasetoMaker struct {
+    paseto       *paseto.V2
+    symmetricKey []byte
+}
+
+// NewPasetoMaker cria uma nova instância de PasetoMaker com uma chave secreta de pelo menos 32 bytes.
+func NewPasetoMaker(symmetricKey string) (*PasetoMaker, error) {
+    if len(symmetricKey) != chacha20poly1305.KeySize {
+        return nil, fmt.Errorf("tamanho inválido da chave secreta: deve ter %d bytes", chacha20poly1305.KeySize)
+    }
+
+    maker := &PasetoMaker{
+        paseto:       paseto.NewV2(),
+        symmetricKey: []byte(symmetricKey),
+    }
+    return maker, nil
+}
+
+```
+
+Passo 2: Geração de Tokens
+
+Agora, vamos criar a função para gerar tokens PASETO com um tempo de expiração e dados customizados (payload), como o ID do usuário.
+
+```go
+type TokenPayload struct {
+    Username string    `json:"username"`
+    IssuedAt time.Time `json:"issued_at"`
+    ExpiredAt time.Time `json:"expired_at"`
+}
+
+// CreateToken gera um novo token PASETO com um tempo de expiração.
+func (maker *PasetoMaker) CreateToken(username string, duration time.Duration) (string, *TokenPayload, error) {
+    payload := &TokenPayload{
+        Username:  username,
+        IssuedAt:  time.Now(),
+        ExpiredAt: time.Now().Add(duration),
+    }
+
+    token, err := maker.paseto.Encrypt(maker.symmetricKey, payload, nil)
+    return token, payload, err
+}
+
+```
+
+Passo 3: Verificação de Tokens
+
+Depois de gerar o token, precisamos de uma função para verificar sua autenticidade e validade:
+
+```go
+// VerifyToken verifica se o token PASETO é válido e retorna o payload.
+func (maker *PasetoMaker) VerifyToken(token string) (*TokenPayload, error) {
+    var payload TokenPayload
+    err := maker.paseto.Decrypt(token, maker.symmetricKey, &payload, nil)
+    if err != nil {
+        return nil, fmt.Errorf("token inválido: %v", err)
+    }
+
+    if time.Now().After(payload.ExpiredAt) {
+        return nil, fmt.Errorf("token expirado")
+    }
+
+    return &payload, nil
+}
+
+```
+
+**4. Integrando PASETO no Fluxo de Autenticação**
+Aqui está como integrar o PASETO ao fluxo de autenticação do seu projeto:
+
+**1. Criação do Token na Autenticação:** Quando o usuário faz login com credenciais corretas, você gera um token PASETO com uma duração específica.
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+    "log"
+    "github.com/usuario/e_bank/util"
+)
+
+func main() {
+    // Crie uma chave secreta (32 bytes)
+    secretKey := "minha-chave-super-segura-32bytes!"
+
+    pasetoMaker, err := util.NewPasetoMaker(secretKey)
+    if err != nil {
+        log.Fatal("Erro ao criar Paseto Maker:", err)
+    }
+
+    token, payload, err := pasetoMaker.CreateToken("usuario123", time.Hour)
+    if err != nil {
+        log.Fatal("Erro ao criar token:", err)
+    }
+
+    fmt.Println("Token:", token)
+    fmt.Printf("Payload: %+v\n", payload)
+}
+
+```
+
+**2. Verificação do Token em Endpoints Protegidos:**
+Em endpoints que exigem autenticação,
+como operações bancárias ou consulta de dados,
+você verifica o token enviado pelo cliente.
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    "github.com/usuario/e_bank/util"
+)
+
+func main() {
+    secretKey := "minha-chave-super-segura-32bytes!"
+
+    pasetoMaker, err := util.NewPasetoMaker(secretKey)
+    if err != nil {
+        log.Fatal("Erro ao criar Paseto Maker:", err)
+    }
+
+    token := "token_gerado_aqui"
+
+    payload, err := pasetoMaker.VerifyToken(token)
+    if err != nil {
+        log.Fatal("Erro ao verificar token:", err)
+    }
+
+    fmt.Printf("Payload válido: %+v\n", payload)
+}
+
+```
+
+**5. Práticas Recomendadas**
+
+**- Use uma chave secreta segura:** Certifique-se de que a chave secreta tenha pelo menos 32 bytes e que seja gerada de forma segura.
+**- Defina um tempo de expiração apropriado:** Tokens devem expirar após um período adequado para evitar problemas de segurança em caso de vazamento.
+**- Use HTTPS:** Sempre transmita tokens em conexões seguras para evitar que sejam interceptados.
+
+---
+
+Com PASETO, você pode implementar autenticação baseada em tokens de forma segura no E_Bank. Este tutorial cobre a criação e verificação de tokens, além de fornecer as bases para integrar PASETO ao fluxo de autenticação do seu projeto.
