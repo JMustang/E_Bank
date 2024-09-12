@@ -22,13 +22,13 @@ type Payload struct {
 }
 
 // NewPayload creates a new token payload with a specific username and duration
-func NewPayload(username string, duration time.Duration, role string) (*Payload, error) {
+func NewPayload(username string, role string, duration time.Duration) (*Payload, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
 	}
 
-	payload := Payload{
+	payload := &Payload{
 		ID:        tokenID,
 		Username:  username,
 		Role:      role,
@@ -36,7 +36,7 @@ func NewPayload(username string, duration time.Duration, role string) (*Payload,
 		ExpiredAt: time.Now().Add(duration),
 	}
 
-	return &payload, nil
+	return payload, nil
 }
 
 // Valid checks if the token payload is valid or not
