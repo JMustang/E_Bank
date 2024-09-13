@@ -9,8 +9,8 @@ import (
 
 // Diferent types of error returned by the VerifyToken function
 var (
-	errInvalidToken = errors.New("invalid token!")
-	errExpiredToken = errors.New("token has expired!")
+	ErrInvalidToken = errors.New("invalid token")
+	ErrExpiredToken = errors.New("token has expired")
 )
 
 type Payload struct {
@@ -42,7 +42,7 @@ func NewPayload(username string, role string, duration time.Duration) (*Payload,
 // Valid checks if the token payload is valid or not
 func (payload *Payload) Valid() error {
 	if time.Now().After(payload.ExpiredAt) {
-		return errExpiredToken
+		return ErrExpiredToken
 	}
 	return nil
 }
