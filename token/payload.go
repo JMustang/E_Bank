@@ -24,7 +24,7 @@ type Payload struct {
 // NewPayload creates a new token payload with a specific username and duration
 func NewPayload(
 	username string,
-	// role string,
+	role string,
 	duration time.Duration,
 
 ) (*Payload, error) {
@@ -34,9 +34,9 @@ func NewPayload(
 	}
 
 	payload := &Payload{
-		ID:       tokenID,
-		Username: username,
-		// Role:      role,
+		ID:        tokenID,
+		Username:  username,
+		Role:      role,
 		IssuedAt:  time.Now(),
 		ExpiredAt: time.Now().Add(duration),
 	}
