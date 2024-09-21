@@ -7,7 +7,7 @@ type Maker interface {
 	// CreateToken Creates a new token for a specific username and duration
 	CreateToken(
 		username string,
-		// role string,
+		role string,
 		duration time.Duration,
 	) (string, *Payload, error)
 
