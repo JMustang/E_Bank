@@ -7,6 +7,7 @@ import (
 
 	"github.com/JMustang/E_Bank/token"
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAuthMiddleware(t *testing.T) {
@@ -14,7 +15,17 @@ func TestAuthMiddleware(t *testing.T) {
 		name          string
 		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
-	}{}
+	}{
+		{
+			name: "OK",
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+
+			},
+		},
+	}
 
 	for i := range testCases {
 		tc := testCases[i]
@@ -30,6 +41,14 @@ func TestAuthMiddleware(t *testing.T) {
 					ctx.JSON(http.StatusOK, gin.H{})
 				},
 			)
+
+			recorder := httptest.NewRecorder()
+			request, err := http.NewRequest(http.MethodGet, authPath, nil)
+			require.NoError(t, err)
+
+			tc.setupAuth(t, request, server.tokenMaker)
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(t, recorder)
 		})
 	}
 }
